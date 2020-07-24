@@ -3,5 +3,5 @@ a_two = 0.4802462930911932
 rcut = 0.72 
 width = 0.20 
 s_8 = 1.1873480299798238
-CKS_Path: @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_DATADIR@/mp2d/CKS_C6coeffs.dat
-UCHF_Path: @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_DATADIR@/mp2d/UCHF_C6coeffs.dat
+CKS_Path:  /Users/yiy/Tests/0054_mp2d/MP2D/CKS_C6coeffs.dat
+UCHF_Path: /Users/yiy/Tests/0054_mp2d/MP2D/UCHF_C6coeffs.dat

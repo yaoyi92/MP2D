@@ -1,15 +1,15 @@
 CC=g++
-CFLAGS=-g
-CFLAGS=-O3
+CFLAGS=-g -rdynamic
+#CFLAGS=-O3
 DEPS = MP2D.h
 OBJ = Main.o MP2D.o
 
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c -o $@ $^
 
 MP2D: $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS) 
+	$(CC) $(CFLAGS) -o $@ $^  
 
 .PHONY: clean
 

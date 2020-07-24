@@ -27,6 +27,11 @@ class MP2D {
         double *xyz;
         vector<double> XYZ;
 
+        // pbc related
+        vector<vector<double> > lat;
+        vector<int> rep_vdw;
+        vector<int> rep_cn;
+
         double a_one, a_two, rcut, width, s_8;
      //   double CutoffRadii[36][36];
        // double *r0AB;
@@ -67,6 +72,7 @@ class MP2D {
         bool s8_U;
         bool CKS_Coeffs;
         bool UCHF_Coeffs;
+        bool PBC_U;
 
         double L_ij;
 
@@ -115,6 +121,10 @@ class MP2D {
         valarray<double> ComputeC6_UCHF_Gradient(int atnumA, int atnumB, double CN_A, double CN_B, valarray<double> vectA, valarray<double> vectB);
         valarray<double> ComputeC6_CKS_Gradient(int atnumA, int atnumB, double CN_A, double CN_B, valarray<double> vectA, valarray<double> vectB);
         void Test_Function();
+        // for pbc
+        void cross_product(vector<double> vect_A, vector<double> vect_B, vector<double> cross_P);
+        double l2_norm(vector<double> const& u);
+        void set_criteria(double rthr, vector<vector<double> > lat, vector<int> tau_max);
 
         
         void Rewind(ifstream& infile) {

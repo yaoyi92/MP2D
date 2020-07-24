@@ -13,6 +13,7 @@
 #include<iomanip> 
 #include<algorithm> 
 #include<functional> 
+#include<numeric>
 
 //using namespace std::placeholders; 
 
@@ -144,11 +145,15 @@ void MP2D::GetUserParameters(int argc, char* argv[]) {
 	    Gradient_U =true;
         }
 
+        else if (str.substr(0,5) == "--pbc") {
+	    PBC_U =true;
+        }
+
         else {} 
         str.clear();
     }
     // Error handling in case a keyword is provided that does not match a known keyword.
-    if (argv[2] && Param_U==false && UCHF_U == false && CKS_U == false && w_U == false && rcut_U == false && TT_a1_U == false && TT_a2_U == false && s8_U == false && Gradient_U == false    ) {
+    if (argv[2] && Param_U==false && UCHF_U == false && CKS_U == false && w_U == false && rcut_U == false && TT_a1_U == false && TT_a2_U == false && s8_U == false && Gradient_U == false && PBC_U == false  ) {
       	    cerr << "Calculation terminated, the provided input does not match any known keyword. Please refer to README.txt" << endl;
             exit(1);
     }
@@ -286,7 +291,29 @@ void MP2D::GetCoordinatesDifferently(ifstream& infile) {
 
     // Skip the line for the number of atoms and the line for comments
     getline(infile,line);
+    if (PBC_U == true) {
+        lat.resize(3);
+        lat[0].resize(3);
+        lat[1].resize(3);
+        lat[2].resize(3);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                infile >> lat[i][j];
+                lat[i][j] = lat[i][j] * AngToBohr;
+            }
+        }
+        cout << "periodic boundary condition" << endl;
+        cout << "lattice vector 1 (Bohr): " << lat[0][0] << " " << lat[0][1] << " " << lat[0][2] << endl;
+        cout << "lattice vector 2 (Bohr): " << lat[1][0] << " " << lat[1][1] << " " << lat[1][2] << endl;
+        cout << "lattice vector 3 (Bohr): " << lat[2][0] << " " << lat[2][1] << " " << lat[2][2] << endl;
+        double rthr = 9000.0;
+        double cn_thr = 1600.0;
+        set_criteria(rthr,lat,rep_vdw);
+        set_criteria(cn_thr,lat,rep_cn);
+    }
+    else{
     getline(infile,line);
+    }
      
     // starting from the third line, loop through and store the coordinates
    
@@ -679,6 +706,7 @@ void MP2D::CoordinationNumber() {
                 
         }
         Coordination_Number[i] = CN;  
+        cout << "coordination number: "<< i << " " << CN << endl;
     }
 
 }
@@ -1078,6 +1106,54 @@ valarray<double> MP2D::ComputeC6_CKS_Gradient(int atnumA, int atnumB, double CN_
      
 
 } 
+
+// Function to find
+// cross product of two vector array.
+void MP2D::cross_product(vector<double> vect_A, vector<double> vect_B, vector<double> cross_P) {
+
+    cross_P[0] = vect_A[1] * vect_B[2] - vect_A[2] * vect_B[1];
+    cross_P[1] = vect_A[2] * vect_B[0] - vect_A[0] * vect_B[2];
+    cross_P[2] = vect_A[0] * vect_B[1] - vect_A[1] * vect_B[0];
+}
+
+void MP2D::set_criteria(double rthr, vector<vector<double> > lat, vector<int> tau_max) {
+    vector<double> norm0, norm1, norm2;
+    double r_cutoff = sqrt(rthr);
+    double cos10, cos21, cos32;
+    cross_product(lat[1],lat[2],norm0);
+    cross_product(lat[2],lat[0],norm1);
+    cross_product(lat[0],lat[1],norm2);
+
+    norm0[0] = norm0[0] / l2_norm(norm0);
+    norm0[1] = norm0[1] / l2_norm(norm0);
+    norm0[2] = norm0[2] / l2_norm(norm0);
+    norm1[0] = norm1[0] / l2_norm(norm1);
+    norm1[1] = norm1[1] / l2_norm(norm1);
+    norm1[2] = norm1[2] / l2_norm(norm1);
+    norm2[0] = norm2[0] / l2_norm(norm2);
+    norm2[1] = norm2[1] / l2_norm(norm2);
+    norm2[2] = norm2[2] / l2_norm(norm2);
+
+    cos10 = inner_product(norm0.begin(), norm0.end(),  lat[0].begin(),0);
+    cos21 = inner_product(norm1.begin(), norm0.end(),  lat[1].begin(),0);
+    cos32 = inner_product(norm2.begin(), norm0.end(),  lat[2].begin(),0);
+
+    tau_max[0] = int(abs(r_cutoff/cos10))+1;
+    tau_max[1] = int(abs(r_cutoff/cos10))+1;
+    tau_max[2] = int(abs(r_cutoff/cos10))+1;
+
+    cout << "tau_max " << tau_max[0] << " " << tau_max[1] << " " << tau_max[2] << endl;
+}
+
+
+double MP2D::l2_norm(vector<double> const& u) {
+    double accum = 0.;
+    for (int i = 0; i < u.size(); ++i) {
+        accum += u[i] * u[i];
+    }
+    return sqrt(accum);
+}
+
 
 void MP2D::Test_Function() {
 
