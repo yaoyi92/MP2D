@@ -711,6 +711,53 @@ void MP2D::CoordinationNumber() {
 
 }
 
+void MP2D::PBCCoordinationNumber() {
+
+    double function = 0.0;
+    double CN;
+
+    Coordination_Number.resize(Ntot);
+
+
+    for (int i=0; i < NumberOfAtoms; i++) {
+        CN = 0.0;
+        for (int j=0; j < NumberOfAtoms; j++ ) {
+
+            double R_AB = ComputeDistance(XYZ[3*i], XYZ[3*j], XYZ[3*i +1], XYZ[3*j +1], XYZ[3*i +2], XYZ[3*j + 2]);
+
+            
+
+            if (i!=j) {
+            
+                if (R_AB <= 0.95*RcovAB[i][j]) {
+                    function = 1.0;
+                }
+
+                else if (R_AB >= 1.75*RcovAB[i][j]) {
+                    function = 0.0;
+                }
+
+                else {
+                    double numerator = R_AB - 0.95*RcovAB[i][j];
+                    double xprime = numerator/(1.75*RcovAB[i][j] - 0.95*RcovAB[i][j]);
+                    function = 1.0 - (-20*pow(xprime,7) + 70*pow(xprime, 6) - 84*pow(xprime,5) + 35*pow(xprime,4));
+                }
+            }
+
+            else {
+                function = 0.0;
+
+            }
+
+            CN = CN + function;
+                
+        }
+        Coordination_Number[i] = CN;  
+        cout << "coordination number: "<< i << " " << CN << endl;
+    }
+
+}
+
 void MP2D::CoordinationNumberGradient() {
 
     double function_gradient = 0.0;
@@ -1109,7 +1156,7 @@ valarray<double> MP2D::ComputeC6_CKS_Gradient(int atnumA, int atnumB, double CN_
 
 // Function to find
 // cross product of two vector array.
-void MP2D::cross_product(vector<double> vect_A, vector<double> vect_B, vector<double> cross_P) {
+void MP2D::cross_product(vector<double> vect_A, vector<double> vect_B, vector<double> &cross_P) {
 
     cross_P[0] = vect_A[1] * vect_B[2] - vect_A[2] * vect_B[1];
     cross_P[1] = vect_A[2] * vect_B[0] - vect_A[0] * vect_B[2];
@@ -1117,7 +1164,9 @@ void MP2D::cross_product(vector<double> vect_A, vector<double> vect_B, vector<do
 }
 
 void MP2D::set_criteria(double rthr, vector<vector<double> > lat, vector<int> tau_max) {
-    vector<double> norm0, norm1, norm2;
+    vector<double> norm0 = vector<double>(3);
+    vector<double> norm1 = vector<double>(3);
+    vector<double> norm2 = vector<double>(3);
     double r_cutoff = sqrt(rthr);
     double cos10, cos21, cos32;
     cross_product(lat[1],lat[2],norm0);
@@ -1134,14 +1183,16 @@ void MP2D::set_criteria(double rthr, vector<vector<double> > lat, vector<int> ta
     norm2[1] = norm2[1] / l2_norm(norm2);
     norm2[2] = norm2[2] / l2_norm(norm2);
 
-    cos10 = inner_product(norm0.begin(), norm0.end(),  lat[0].begin(),0);
-    cos21 = inner_product(norm1.begin(), norm0.end(),  lat[1].begin(),0);
-    cos32 = inner_product(norm2.begin(), norm0.end(),  lat[2].begin(),0);
+    cos10 = inner_product(norm0.begin(), norm0.end(),  lat[0].begin(),0.0);
+    cos21 = inner_product(norm1.begin(), norm1.end(),  lat[1].begin(),0.0);
+    cos32 = inner_product(norm2.begin(), norm2.end(),  lat[2].begin(),0.0);
 
     tau_max[0] = int(abs(r_cutoff/cos10))+1;
-    tau_max[1] = int(abs(r_cutoff/cos10))+1;
-    tau_max[2] = int(abs(r_cutoff/cos10))+1;
+    tau_max[1] = int(abs(r_cutoff/cos21))+1;
+    tau_max[2] = int(abs(r_cutoff/cos32))+1;
 
+    cout << "r_cutoff " << r_cutoff << endl;
+    cout << "cos " << cos10 << " " << cos21 << " " << cos32 << endl;
     cout << "tau_max " << tau_max[0] << " " << tau_max[1] << " " << tau_max[2] << endl;
 }
 
@@ -1339,9 +1390,9 @@ void MP2D::Test_Function() {
     cout << "   w     = " <<  width << endl;
     cout << "" << endl;
     cout << "MP2D Dispersion Energies (kcal/mol)" << endl;
-    printf("   UCHF Contribution:  %f \n",4, (E6UCHF + E8UCHF) * HartreeToKcal);
-    printf("   CKS Contribution:  %f \n", 4, (E6CKS + E8CKS) * HartreeToKcal);
-    printf("   MP2D dispersion correction:  %f \n", 4, Total_Energy);
+    printf("   UCHF Contribution:  %f \n", (E6UCHF + E8UCHF) * HartreeToKcal);
+    printf("   CKS Contribution:  %f \n",  (E6CKS + E8CKS) * HartreeToKcal);
+    printf("   MP2D dispersion correction:  %f \n",  Total_Energy);
     cout << "MP2D Dispersion Energies (Eh)" << endl;
     cout << "   UCHF Contribution Eh:  " << std::setprecision (12) << (E6UCHF + E8UCHF) << endl;
     cout << "   CKS Contribution Eh:  " << (E6CKS + E8CKS) << endl;
@@ -1362,7 +1413,7 @@ void MP2D::Test_Function() {
             cout << "MP2D Gradient (hartree/bohr)" << endl;
             for (int i=0; i<Ntot; i++ ) {
             
-                printf ("%20.12f %20.12f %20.12f \n", 15, Gradient[3*i]+C6Grad[3*i], 15, Gradient[3*i+1]+ C6Grad[3*i+1], 15, Gradient[3*i+2]+ C6Grad[3*i+2]);
+                printf ("%20.12f %20.12f %20.12f \n",  Gradient[3*i]+C6Grad[3*i],  Gradient[3*i+1]+ C6Grad[3*i+1],  Gradient[3*i+2]+ C6Grad[3*i+2]);
 
                 // The gradients are converted to hartree/Bohr so that PSI4 can use the gradients
                 myfile << std::setprecision (12) << Gradient[3*i]+C6Grad[3*i] << "     " << Gradient[3*i+1]+ C6Grad[3*i+1] << "     " << Gradient[3*i+2]+ C6Grad[3*i+2] << endl;

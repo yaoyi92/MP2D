@@ -5,8 +5,8 @@ DEPS = MP2D.h
 OBJ = Main.o MP2D.o
 
 
-%.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $^
+%.o: %.cpp $(DEPS)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 MP2D: $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^  
