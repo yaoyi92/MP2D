@@ -126,6 +126,7 @@ class MP2D {
         double l2_norm(vector<double> const& u);
         void set_criteria(double rthr, vector<vector<double> > lat, vector<int> &tau_max);
         void PBCCoordinationNumber();
+        void PBCTest_Function();
 
         
         void Rewind(ifstream& infile) {
