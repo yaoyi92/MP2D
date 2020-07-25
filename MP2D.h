@@ -124,7 +124,7 @@ class MP2D {
         // for pbc
         void cross_product(vector<double> vect_A, vector<double> vect_B, vector<double> &cross_P);
         double l2_norm(vector<double> const& u);
-        void set_criteria(double rthr, vector<vector<double> > lat, vector<int> tau_max);
+        void set_criteria(double rthr, vector<vector<double> > lat, vector<int> &tau_max);
         void PBCCoordinationNumber();
 
         

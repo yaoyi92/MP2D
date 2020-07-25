@@ -36,7 +36,12 @@ void MP2D::Initialize(ifstream &infile, int argc, char *argv[]) {
     *GetMultipoleExpectationValue();
     GetCovalentRadii();
     GetC6Coefficients();
-    CoordinationNumber();
+    if (PBC_U) {
+        PBCCoordinationNumber();
+    }
+    else {
+        CoordinationNumber();
+    }
     CoordinationNumberGradient();
     Test_Function();
   
@@ -721,13 +726,23 @@ void MP2D::PBCCoordinationNumber() {
 
     for (int i=0; i < NumberOfAtoms; i++) {
         CN = 0.0;
+	for(int i_taux = -rep_cn[0]; i_taux < rep_cn[0] + 1; i_taux ++) {
+	for(int i_tauy = -rep_cn[1]; i_tauy < rep_cn[1] + 1; i_tauy ++) {
+	for(int i_tauz = -rep_cn[2]; i_tauz < rep_cn[2] + 1; i_tauz ++) {
+	
         for (int j=0; j < NumberOfAtoms; j++ ) {
 
-            double R_AB = ComputeDistance(XYZ[3*i], XYZ[3*j], XYZ[3*i +1], XYZ[3*j +1], XYZ[3*i +2], XYZ[3*j + 2]);
 
             
 
-            if (i!=j) {
+            if ((i!=j) || (i_taux !=0 || i_tauy !=0 || i_tauz !=0) ) {
+                double taux = i_taux * lat[0][0] + i_tauy * lat[1][0] + i_tauz * lat[2][0];
+                double tauy = i_taux * lat[0][1] + i_tauy * lat[1][1] + i_tauz * lat[2][1];
+                double tauz = i_taux * lat[0][2] + i_tauy * lat[1][2] + i_tauz * lat[2][2];
+
+                double R_AB = ComputeDistance(XYZ[3*i] + taux, XYZ[3*j], \
+			                      XYZ[3*i +1] + tauy, XYZ[3*j +1], \
+					      XYZ[3*i +2] + tauz, XYZ[3*j + 2]);
             
                 if (R_AB <= 0.95*RcovAB[i][j]) {
                     function = 1.0;
@@ -752,6 +767,10 @@ void MP2D::PBCCoordinationNumber() {
             CN = CN + function;
                 
         }
+
+	}
+	}
+	}
         Coordination_Number[i] = CN;  
         cout << "coordination number: "<< i << " " << CN << endl;
     }
@@ -1163,7 +1182,7 @@ void MP2D::cross_product(vector<double> vect_A, vector<double> vect_B, vector<do
     cross_P[2] = vect_A[0] * vect_B[1] - vect_A[1] * vect_B[0];
 }
 
-void MP2D::set_criteria(double rthr, vector<vector<double> > lat, vector<int> tau_max) {
+void MP2D::set_criteria(double rthr, vector<vector<double> > lat, vector<int> &tau_max) {
     vector<double> norm0 = vector<double>(3);
     vector<double> norm1 = vector<double>(3);
     vector<double> norm2 = vector<double>(3);
